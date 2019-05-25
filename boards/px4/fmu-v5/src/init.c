@@ -211,7 +211,6 @@ __EXPORT void board_on_reset(int status)
 #ifdef CONFIG_BOARDCTL_FINALINIT
 int board_app_finalinitialize(uintptr_t arg)
 {
-	board_configure_dcache(1);
 	return 0;
 }
 #endif
@@ -279,9 +278,6 @@ stm32_boardinitialize(void)
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
 	/* Power on Interfaces */
-
-	board_configure_dcache(0);
-
 	VDD_3V3_SD_CARD_EN(true);
 	VDD_5V_PERIPH_EN(true);
 	VDD_5V_HIPOWER_EN(true);

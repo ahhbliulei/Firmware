@@ -164,7 +164,7 @@ __EXPORT void board_on_reset(int status)
 #ifdef CONFIG_BOARDCTL_FINALINIT
 int board_app_finalinitialize(uintptr_t arg)
 {
-	board_configure_dcache(1);
+
 	return 0;
 }
 #endif
@@ -223,9 +223,6 @@ stm32_boardinitialize(void)
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
-
-	board_configure_dcache(0);
-
 	px4_platform_init();
 
 	/* configure the DMA allocator */

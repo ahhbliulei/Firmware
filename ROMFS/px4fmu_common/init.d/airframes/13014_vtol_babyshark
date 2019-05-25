@@ -92,8 +92,6 @@ then
 	param set PWM_MAIN_MIN3 1120
 	param set PWM_MIN 950
 
-	param set SYS_FORCE_F7DC	2
-
 	param set VT_ARSP_BLEND 10
 	param set VT_ARSP_TRANS 21
 	param set VT_B_TRANS_DUR 12
