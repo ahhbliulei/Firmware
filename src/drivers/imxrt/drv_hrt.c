@@ -67,7 +67,7 @@
 
 
 #include "chip.h"
-#include "chip/imxrt_gpt.h"
+#include "hardware/imxrt_gpt.h"
 #include "imxrt_periphclks.h"
 
 #undef PPM_DEBUG
