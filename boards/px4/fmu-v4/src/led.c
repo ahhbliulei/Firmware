@@ -32,12 +32,12 @@
  ****************************************************************************/
 
 /**
- * @file px4fmu2_led.c
+ * @file led.c
  *
  * PX4FMU LED backend.
  */
 
-#include <px4_config.h>
+#include <px4_platform_common/px4_config.h>
 
 #include <stdbool.h>
 
@@ -47,7 +47,7 @@
 #include <arch/board/board.h>
 
 /*
- * Ideally we'd be able to get these from up_internal.h,
+ * Ideally we'd be able to get these from arm_internal.h,
  * but since we want to be able to disable the NuttX use
  * of leds for system indication at will and there is no
  * separate switch, we need to build independent of the

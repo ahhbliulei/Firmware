@@ -42,22 +42,15 @@
 
 #include "airspeed.h"
 
-#include <px4_defines.h>
+#include <px4_platform_common/defines.h>
 #include <lib/ecl/geo/geo.h>
 
-/**
- * Calculate indicated airspeed.
- *
- * Note that the indicated airspeed is not the true airspeed because it
- * lacks the air density compensation. Use the calc_true_airspeed functions to get
- * the true airspeed.
- *
- * @param differential_pressure total_ pressure - static pressure
- * @return indicated airspeed in m/s
- */
-float calc_indicated_airspeed_corrected(enum AIRSPEED_COMPENSATION_MODEL pmodel, enum AIRSPEED_SENSOR_MODEL smodel,
-					float tube_len, float tube_dia_mm, float differential_pressure, float pressure_ambient, float temperature_celsius)
+float calc_IAS_corrected(enum AIRSPEED_COMPENSATION_MODEL pmodel, enum AIRSPEED_SENSOR_MODEL smodel,
+			 float tube_len, float tube_dia_mm, float differential_pressure, float pressure_ambient, float temperature_celsius)
 {
+	if (!PX4_ISFINITE(temperature_celsius)) {
+		temperature_celsius = 15.f; // ICAO Standard Atmosphere 15 degrees celcius
+	}
 
 	// air density in kg/m3
 	const float rho_air = get_air_density(pressure_ambient, temperature_celsius);
@@ -182,21 +175,8 @@ float calc_indicated_airspeed_corrected(enum AIRSPEED_COMPENSATION_MODEL pmodel,
 	return (differential_pressure > 0.0f) ? airspeed_corrected : -airspeed_corrected;
 }
 
-
-/**
- * Calculate indicated airspeed.
- *
- * Note that the indicated airspeed is not the true airspeed because it
- * lacks the air density compensation. Use the calc_true_airspeed functions to get
- * the true airspeed.
- *
- * @param differential_pressure total_ pressure - static pressure
- * @return indicated airspeed in m/s
- */
-float calc_indicated_airspeed(float differential_pressure)
+float calc_IAS(float differential_pressure)
 {
-
-
 	if (differential_pressure > 0.0f) {
 		return sqrtf((2.0f * differential_pressure) / CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C);
 
@@ -206,33 +186,22 @@ float calc_indicated_airspeed(float differential_pressure)
 
 }
 
-/**
- * Calculate true airspeed from indicated airspeed.
- *
- * Note that the true airspeed is NOT the groundspeed, because of the effects of wind
- *
- * @param speed_indicated current indicated airspeed
- * @param pressure_ambient pressure at the side of the tube/airplane
- * @param temperature_celsius air temperature in degrees celcius
- * @return true airspeed in m/s
- */
-float calc_true_airspeed_from_indicated(float speed_indicated, float pressure_ambient, float temperature_celsius)
+float calc_TAS_from_CAS(float speed_calibrated, float pressure_ambient, float temperature_celsius)
 {
-	return speed_indicated * sqrtf(CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C / get_air_density(pressure_ambient,
-				       temperature_celsius));
+	if (!PX4_ISFINITE(temperature_celsius)) {
+		temperature_celsius = 15.f; // ICAO Standard Atmosphere 15 degrees celcius
+	}
+
+	return speed_calibrated * sqrtf(CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C / get_air_density(pressure_ambient,
+					temperature_celsius));
 }
 
-/**
- * Directly calculate true airspeed
- *
- * Note that the true airspeed is NOT the groundspeed, because of the effects of wind
- *
- * @param total_pressure pressure inside the pitot/prandtl tube
- * @param static_pressure pressure at the side of the tube/airplane
- * @param temperature_celsius air temperature in degrees celcius
- * @return true airspeed in m/s
- */
-float calc_true_airspeed(float total_pressure, float static_pressure, float temperature_celsius)
+float calc_CAS_from_IAS(float speed_indicated, float scale)
+{
+	return speed_indicated * scale;
+}
+
+float calc_TAS(float total_pressure, float static_pressure, float temperature_celsius)
 {
 	float density = get_air_density(static_pressure, temperature_celsius);
 
@@ -252,5 +221,14 @@ float calc_true_airspeed(float total_pressure, float static_pressure, float temp
 
 float get_air_density(float static_pressure, float temperature_celsius)
 {
+	if (!PX4_ISFINITE(temperature_celsius)) {
+		temperature_celsius = 15.f; // ICAO Standard Atmosphere 15 degrees celcius
+	}
+
 	return static_pressure / (CONSTANTS_AIR_GAS_CONST * (temperature_celsius - CONSTANTS_ABSOLUTE_NULL_CELSIUS));
+}
+
+float calc_CAS_from_TAS(float speed_true, float pressure_ambient, float temperature_celsius)
+{
+	return speed_true * sqrtf(get_air_density(pressure_ambient, temperature_celsius) / CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C);
 }

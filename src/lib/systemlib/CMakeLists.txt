@@ -33,20 +33,18 @@
 
 set(SRCS
 	conversions.c
-	cpuload.c
+	conversions.h
 	crc.c
-	mavlink_log.c
-	otp.c
-	)
+	crc.h
+	mavlink_log.cpp
+	mavlink_log.h
+)
 
 if(${PX4_PLATFORM} STREQUAL "nuttx")
 	list(APPEND SRCS
-		print_load_nuttx.c
-		)
-else()
-	list(APPEND SRCS
-		print_load_posix.c
-		)
+		otp.c
+	)
 endif()
 
 px4_add_library(systemlib ${SRCS})
+target_compile_options(systemlib PRIVATE ${MAX_CUSTOM_OPT_LEVEL})

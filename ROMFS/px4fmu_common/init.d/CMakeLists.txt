@@ -31,13 +31,17 @@
 #
 ############################################################################
 
+add_subdirectory(airframes)
+
 px4_add_romfs_files(
+	rc.airship_apps
+	rc.airship_defaults
+	rc.boat_defaults
 	rc.fw_apps
 	rc.fw_defaults
 	rc.interface
 	rc.io
 	rc.logging
-	rc.mavlink
 	rc.mc_apps
 	rc.mc_defaults
 	rcS
@@ -45,6 +49,8 @@ px4_add_romfs_files(
 	rc.thermal_cal
 	rc.rover_apps
 	rc.rover_defaults
+	rc.uuv_apps
+	rc.uuv_defaults
 	rc.vehicle_setup
 	rc.vtol_apps
 	rc.vtol_defaults

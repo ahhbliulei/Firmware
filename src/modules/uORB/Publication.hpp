@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2017 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2019 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,32 +38,68 @@
 
 #pragma once
 
-#include <uORB/uORB.h>
+#include <px4_platform_common/defines.h>
 #include <systemlib/err.h>
+
+#include <uORB/uORB.h>
+#include "uORBDeviceNode.hpp"
+#include <uORB/topics/uORBTopics.hpp>
 
 namespace uORB
 {
 
+class PublicationBase
+{
+public:
+
+	bool advertised() const { return _handle != nullptr; }
+
+	bool unadvertise() { return (DeviceNode::unadvertise(_handle) == PX4_OK); }
+
+	orb_id_t get_topic() const { return get_orb_meta(_orb_id); }
+
+protected:
+
+	PublicationBase(ORB_ID id) : _orb_id(id) {}
+
+	~PublicationBase()
+	{
+		if (_handle != nullptr) {
+			// don't automatically unadvertise queued publications (eg vehicle_command)
+			if (static_cast<DeviceNode *>(_handle)->get_queue_size() == 1) {
+				unadvertise();
+			}
+		}
+	}
+
+	orb_advert_t _handle{nullptr};
+	const ORB_ID _orb_id;
+};
+
 /**
- * Base publication wrapper class, used in list traversal
- * of various publications.
+ * uORB publication wrapper class
  */
-template<typename T>
-class Publication
+template<typename T, uint8_t ORB_QSIZE = 1>
+class Publication : public PublicationBase
 {
 public:
 
 	/**
 	 * Constructor
 	 *
-	 * @param meta The uORB metadata (usually from
-	 * 	the ORB_ID() macro) for the topic.
-	 * @param priority The priority for multi pub/sub, 0-based, -1 means
-	 * 	don't publish as multi
+	 * @param meta The uORB metadata (usually from the ORB_ID() macro) for the topic.
 	 */
-	Publication(const orb_metadata *meta, int priority = -1) : _meta(meta), _priority(priority) {}
+	Publication(ORB_ID id) : PublicationBase(id) {}
+	Publication(const orb_metadata *meta) : PublicationBase(static_cast<ORB_ID>(meta->o_id)) {}
 
-	~Publication() { orb_unadvertise(_handle); }
+	bool advertise()
+	{
+		if (!advertised()) {
+			_handle = orb_advertise_queue(get_topic(), nullptr, ORB_QSIZE);
+		}
+
+		return advertised();
+	}
 
 	/**
 	 * Publish the struct
@@ -71,48 +107,16 @@ public:
 	 */
 	bool publish(const T &data)
 	{
-		bool updated = false;
-
-		if (_handle != nullptr) {
-			if (orb_publish(_meta, _handle, &data) != PX4_OK) {
-				PX4_ERR("%s publish fail", _meta->o_name);
-
-			} else {
-				updated = true;
-			}
-
-		} else {
-			orb_advert_t handle = nullptr;
-
-			if (_priority > 0) {
-				int instance;
-				handle = orb_advertise_multi(_meta, &data, &instance, _priority);
-
-			} else {
-				handle = orb_advertise(_meta, &data);
-			}
-
-			if (handle != nullptr) {
-				_handle = handle;
-				updated = true;
-
-			} else {
-				PX4_ERR("%s advert fail", _meta->o_name);
-			}
+		if (!advertised()) {
+			advertise();
 		}
 
-		return updated;
+		return (DeviceNode::publish(get_topic(), _handle, &data) == PX4_OK);
 	}
-
-protected:
-	const orb_metadata *_meta;
-	const int _priority;
-
-	orb_advert_t _handle{nullptr};
 };
 
 /**
- * The publication base class as a list node.
+ * The publication class with data embedded.
  */
 template<typename T>
 class PublicationData : public Publication<T>
@@ -121,12 +125,10 @@ public:
 	/**
 	 * Constructor
 	 *
-	 * @param meta The uORB metadata (usually from
-	 * 	the ORB_ID() macro) for the topic.
-	 * @param priority The priority for multi pub, 0-based.
+	 * @param meta The uORB metadata (usually from the ORB_ID() macro) for the topic.
 	 */
-	PublicationData(const orb_metadata *meta, int priority = -1) : Publication<T>(meta, priority) {}
-	~PublicationData() = default;
+	PublicationData(ORB_ID id) : Publication<T>(id) {}
+	PublicationData(const orb_metadata *meta) : Publication<T>(meta) {}
 
 	T	&get() { return _data; }
 	void	set(const T &data) { _data = data; }
@@ -142,5 +144,11 @@ public:
 private:
 	T _data{};
 };
+
+
+template<class T>
+using PublicationQueued = Publication<T, T::ORB_QUEUE_LENGTH>;
+
+
 
 } // namespace uORB

@@ -77,9 +77,32 @@ static const px4_hw_mft_item_t hw_mft_list_v0500[] = {
 		.mandatory   = 1,
 		.connection  = px4_hw_con_onboard,
 	},
+	{
+		.present     = 1,
+		.mandatory   = 1,
+		.connection  = px4_hw_con_onboard,
+	},
 };
 
 static const px4_hw_mft_item_t hw_mft_list_v0501[] = {
+	{
+		.present     = 0,
+		.mandatory   = 0,
+		.connection  = px4_hw_con_unknown,
+	},
+	{
+		.present     = 1,
+		.mandatory   = 1,
+		.connection  = px4_hw_con_onboard,
+	},
+};
+
+static const px4_hw_mft_item_t hw_mft_list_v0509[] = {
+	{
+		.present     = 1,
+		.mandatory   = 1,
+		.connection  = px4_hw_con_onboard,
+	},
 	{
 		.present     = 0,
 		.mandatory   = 0,
@@ -90,22 +113,9 @@ static const px4_hw_mft_item_t hw_mft_list_v0501[] = {
 static px4_hw_mft_list_entry_t mft_lists[] = {
 	{0x0000, hw_mft_list_v0500, arraySize(hw_mft_list_v0500)},
 	{0x0001, hw_mft_list_v0501, arraySize(hw_mft_list_v0501)},
+	{0x0900, hw_mft_list_v0509, arraySize(hw_mft_list_v0509)},
 };
 
-
-/************************************************************************************
- * Name: board_rc_input
- *
- * Description:
- *   All boards my optionally provide this API to invert the Serial RC input.
- *   This is needed on SoCs that support the notion RXINV or TXINV as opposed to
- *   and external XOR controlled by a GPIO
- *
- ************************************************************************************/
-__EXPORT bool board_supports_single_wire(uint32_t uxart_base)
-{
-	return uxart_base == RC_UXART_BASE;
-}
 
 /************************************************************************************
  * Name: board_query_manifest

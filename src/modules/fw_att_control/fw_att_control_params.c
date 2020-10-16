@@ -109,7 +109,7 @@ PARAM_DEFINE_FLOAT(FW_PR_P, 0.08f);
  * @increment 0.005
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_PR_I, 0.02f);
+PARAM_DEFINE_FLOAT(FW_PR_I, 0.1f);
 
 /**
  * Maximum positive / up pitch rate.
@@ -183,7 +183,7 @@ PARAM_DEFINE_FLOAT(FW_RR_P, 0.05f);
  * @increment 0.005
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_RR_I, 0.01f);
+PARAM_DEFINE_FLOAT(FW_RR_I, 0.1f);
 
 /**
  * Roll integrator anti-windup
@@ -241,7 +241,7 @@ PARAM_DEFINE_FLOAT(FW_YR_P, 0.05f);
  * @increment 0.5
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_YR_I, 0.01f);
+PARAM_DEFINE_FLOAT(FW_YR_I, 0.1f);
 
 /**
  * Yaw rate integrator limit
@@ -538,6 +538,21 @@ PARAM_DEFINE_FLOAT(FW_FLAPERON_SCL, 0.0f);
 PARAM_DEFINE_INT32(FW_ARSP_MODE, 0);
 
 /**
+ * Enable airspeed scaling
+ *
+ * This enables a logic that automatically adjusts the output of the rate controller to take
+ * into account the real torque produced by an aerodynamic control surface given
+ * the current deviation from the trim airspeed (FW_AIRSPD_TRIM).
+ *
+ * Enable when using aerodynamic control surfaces (e.g.: plane)
+ * Disable when using rotor wings (e.g.: autogyro)
+ *
+ * @boolean
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_INT32(FW_ARSP_SCALE_EN, 1);
+
+/**
  * Manual roll scale
  *
  * Scale factor applied to the desired roll actuator command in full manual mode. This parameter allows
@@ -602,7 +617,7 @@ PARAM_DEFINE_INT32(FW_BAT_SCALE_EN, 0);
  *
  * @min 45
  * @max 720
- * @unit degrees
+ * @unit deg
  * @group FW Attitude Control
  */
 PARAM_DEFINE_FLOAT(FW_ACRO_X_MAX, 90);
@@ -615,7 +630,7 @@ PARAM_DEFINE_FLOAT(FW_ACRO_X_MAX, 90);
  *
  * @min 45
  * @max 720
- * @unit degrees
+ * @unit deg
  * @group FW Attitude Control
  */
 PARAM_DEFINE_FLOAT(FW_ACRO_Y_MAX, 90);
@@ -628,7 +643,7 @@ PARAM_DEFINE_FLOAT(FW_ACRO_Y_MAX, 90);
  *
  * @min 10
  * @max 180
- * @unit degrees
+ * @unit deg
  * @group FW Attitude Control
  */
 PARAM_DEFINE_FLOAT(FW_ACRO_Z_MAX, 45);

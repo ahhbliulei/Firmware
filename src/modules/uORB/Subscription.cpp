@@ -37,26 +37,42 @@
  */
 
 #include "Subscription.hpp"
-#include <px4_defines.h>
+#include <px4_platform_common/defines.h>
 
 namespace uORB
 {
 
 bool Subscription::subscribe()
 {
-	DeviceMaster *device_master = uORB::Manager::get_instance()->get_device_master();
-	_node = device_master->getDeviceNode(_meta, _instance);
-
+	// check if already subscribed
 	if (_node != nullptr) {
-		_node->add_internal_subscriber();
-
-		// If there were any previous publications, allow the subscriber to read them
-		const unsigned curr_gen = _node->published_message_count();
-		const unsigned q_size = _node->get_queue_size();
-
-		_last_generation = curr_gen - (q_size < curr_gen ? q_size : curr_gen);
-
 		return true;
+	}
+
+	if (_orb_id != ORB_ID::INVALID) {
+
+		DeviceMaster *device_master = uORB::Manager::get_instance()->get_device_master();
+
+		if (device_master != nullptr) {
+
+			if (!device_master->deviceNodeExists(_orb_id, _instance)) {
+				return false;
+			}
+
+			uORB::DeviceNode *node = device_master->getDeviceNode(get_topic(), _instance);
+
+			if (node != nullptr) {
+				_node = node;
+				_node->add_internal_subscriber();
+
+				const unsigned curr_gen = _node->published_message_count();
+
+				// If there were any previous publications allow the subscriber to read them
+				_last_generation = curr_gen - math::min((unsigned)_node->get_queue_size(), curr_gen);
+
+				return true;
+			}
+		}
 	}
 
 	return false;
@@ -68,49 +84,30 @@ void Subscription::unsubscribe()
 		_node->remove_internal_subscriber();
 	}
 
+	_node = nullptr;
 	_last_generation = 0;
 }
 
-bool Subscription::init()
+bool Subscription::ChangeInstance(uint8_t instance)
 {
-	if (_meta != nullptr) {
-		// this throttles the relatively expensive calls to getDeviceNode()
-		if ((_last_generation == 0) || (_last_generation < 1000) || (_last_generation % 100 == 0))  {
-			if (subscribe()) {
-				return true;
+	if (instance != _instance) {
+		DeviceMaster *device_master = uORB::Manager::get_instance()->get_device_master();
+
+		if (device_master != nullptr) {
+			if (!device_master->deviceNodeExists(_orb_id, _instance)) {
+				return false;
 			}
-		}
 
-		if (_node == nullptr) {
-			// use generation to count attempts to subscribe
-			_last_generation++;
-		}
-	}
-
-	return false;
-}
-
-bool Subscription::forceInit()
-{
-	if (_node == nullptr) {
-		// reset generation to force subscription attempt
-		_last_generation = 0;
-		return subscribe();
-	}
-
-	return false;
-}
-
-bool Subscription::update(uint64_t *time, void *dst)
-{
-	if ((time != nullptr) && (dst != nullptr) && published()) {
-		// always copy data to dst regardless of update
-		const uint64_t t = _node->copy_and_get_timestamp(dst, _last_generation);
-
-		if (*time == 0 || *time != t) {
-			*time = t;
+			// if desired new instance exists, unsubscribe from current
+			unsubscribe();
+			_instance = instance;
+			subscribe();
 			return true;
 		}
+
+	} else {
+		// already on desired index
+		return true;
 	}
 
 	return false;

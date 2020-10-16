@@ -41,6 +41,7 @@
 #define _DEVICE_SPI_H
 
 #include "../CDev.hpp"
+#include <px4_platform_common/spi.h>
 
 #ifdef __PX4_LINUX
 
@@ -65,18 +66,25 @@ namespace device __EXPORT
  */
 class __EXPORT SPI : public CDev
 {
+public:
+	// no copy, assignment, move, move assignment
+	SPI(const SPI &) = delete;
+	SPI &operator=(const SPI &) = delete;
+	SPI(SPI &&) = delete;
+	SPI &operator=(SPI &&) = delete;
+
 protected:
 	/**
 	 * Constructor
 	 *
+	 * @param device_type	The device type (see drv_sensor.h)
 	 * @param name		Driver name
-	 * @param devname	Device node name
 	 * @param bus		SPI bus on which the device lives
 	 * @param device	Device handle (used by SPI_SELECT)
 	 * @param mode		SPI clock/data mode
 	 * @param frequency	SPI clock frequency
 	 */
-	SPI(const char *name, const char *devname, int bus, uint32_t device, enum spi_mode_e mode, uint32_t frequency);
+	SPI(uint8_t device_type, const char *name, int bus, uint32_t device, enum spi_mode_e mode, uint32_t frequency);
 	virtual ~SPI();
 
 	/**
@@ -88,7 +96,7 @@ protected:
 		LOCK_NONE		/**< perform no locking, only safe if the bus is entirely private */
 	};
 
-	virtual int	init();
+	virtual int	init() override;
 
 	/**
 	 * Check for the presence of the device on the bus.
@@ -147,7 +155,7 @@ protected:
 	 * @param frequency	Frequency to set (Hz)
 	 */
 	void		set_frequency(uint32_t frequency) { _frequency = frequency; }
-	uint32_t		get_frequency() { return _frequency; }
+	uint32_t	get_frequency() { return _frequency; }
 
 	/**
 	 * Set the SPI bus locking mode
@@ -157,27 +165,35 @@ protected:
 	 *
 	 * @param mode	Locking mode
 	 */
-	void		set_lockmode(enum LockMode mode) {}
+	void		set_lockmode(enum LockMode mode) { _locking_mode = mode; }
 
 private:
-	int 			_fd{-1};
-
 	uint32_t		_device;
 	enum spi_mode_e		_mode;
 	uint32_t		_frequency;
+	int 			_fd{-1};
 
-	/* this class does not allow copying */
-	SPI(const SPI &);
-	SPI operator=(const SPI &);
+	LockMode		_locking_mode{LOCK_THREADS};	/**< selected locking mode */
 
 protected:
+	int	_transfer(uint8_t *send, uint8_t *recv, unsigned len);
 
-	bool	external() { return px4_spi_bus_external(get_device_bus()); }
+	int	_transferhword(uint16_t *send, uint16_t *recv, unsigned len);
+
+	virtual bool	external() const override { return px4_spi_bus_external(get_device_bus()); }
 
 };
 
 } // namespace device
 
+#else
+
+enum spi_mode_e {
+	SPIDEV_MODE0 = 0, /* CPOL=0 CHPHA=0 */
+	SPIDEV_MODE1 = 1, /* CPOL=0 CHPHA=1 */
+	SPIDEV_MODE2 = 2, /* CPOL=1 CHPHA=0 */
+	SPIDEV_MODE3 = 3  /* CPOL=1 CHPHA=1 */
+};
 #endif // __PX4_LINUX
 
 #endif /* _DEVICE_SPI_H */
